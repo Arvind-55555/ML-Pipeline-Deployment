@@ -1,45 +1,47 @@
 import subprocess
-import threading
 import time
-import signal
 import sys
 from pathlib import Path
 import logging
+import socket
+
 
 class LocalDeployer:
     """Deploys ML pipelines locally using subprocesses"""
-    
+
     def __init__(self, workspace_dir: str = "workspace"):
         self.workspace_dir = Path(workspace_dir)
         self.workspace_dir.mkdir(exist_ok=True)
         self.processes = {}
         self.logger = logging.getLogger(__name__)
-    
-    def deploy_api_server(self, model_path: str, port: int = 8000, host: str = "127.0.0.1"):
+
+    def deploy_api_server(
+        self, model_path: str, port: int = 8000, host: str = "127.0.0.1"
+    ):
         """Deploy a model as a local FastAPI server"""
-        
+
         # Create API server script dynamically
         api_script = self._create_api_script(model_path, port, host)
         script_path = self.workspace_dir / f"api_server_{port}.py"
         script_path.write_text(api_script)
-        
+
         # Start the server process
         process = subprocess.Popen(
             [sys.executable, str(script_path)],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            text=True,
         )
-        
+
         deployment_id = f"api_server_{port}"
         self.processes[deployment_id] = process
-        
+
         # Wait for server to start
         self._wait_for_server(host, port, timeout=10)
-        
+
         self.logger.info(f"API server deployed on http://{host}:{port}")
         return deployment_id
-    
+
     def _create_api_script(self, model_path: str, port: int, host: str) -> str:
         """Create a standalone FastAPI server script"""
         # Read UI HTML file
@@ -49,8 +51,8 @@ class LocalDeployer:
             ui_content = ui_path.read_text()
             # For triple-quoted strings, we need to escape triple quotes and backslashes
             # But preserve newlines (they work in triple quotes)
-            ui_content = ui_content.replace('\\', '\\\\').replace('"""', '\\"\\"\\"')
-        
+            ui_content = ui_content.replace("\\", "\\\\").replace('"""', '\\"\\"\\"')
+
         return f'''
 import uvicorn
 from fastapi import FastAPI
@@ -101,10 +103,9 @@ async def health():
 if __name__ == "__main__":
     uvicorn.run(app, host="{host}", port={port})
 '''
-    
+
     def _wait_for_server(self, host: str, port: int, timeout: int = 10):
         """Wait for server to become available"""
-        import socket
         start_time = time.time()
         while time.time() - start_time < timeout:
             try:
@@ -113,11 +114,11 @@ if __name__ == "__main__":
                     result = sock.connect_ex((host, port))
                     if result == 0:
                         return True
-            except:
+            except socket.error:
                 pass
             time.sleep(0.5)
         raise TimeoutError(f"Server didn't start within {timeout} seconds")
-    
+
     def stop_deployment(self, deployment_id: str):
         """Stop a running deployment"""
         if deployment_id in self.processes:
@@ -125,18 +126,18 @@ if __name__ == "__main__":
             self.processes[deployment_id].wait()
             del self.processes[deployment_id]
             self.logger.info(f"Stopped deployment: {deployment_id}")
-    
+
     def stop_all(self):
         """Stop all running deployments"""
         for deployment_id in list(self.processes.keys()):
             self.stop_deployment(deployment_id)
-    
+
     def get_status(self):
         """Get status of all deployments"""
         status = {}
         for deployment_id, process in self.processes.items():
             status[deployment_id] = {
                 "running": process.poll() is None,
-                "returncode": process.poll()
+                "returncode": process.poll(),
             }
         return status

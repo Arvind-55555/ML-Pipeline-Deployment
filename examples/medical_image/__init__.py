@@ -1,2 +1,1 @@
 # Medical Image Analysis Example
-

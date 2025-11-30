@@ -7,12 +7,14 @@ from pathlib import Path
 
 # Read README
 readme_file = Path(__file__).parent / "README.md"
-long_description = readme_file.read_text(encoding="utf-8") if readme_file.exists() else ""
+long_description = (
+    readme_file.read_text(encoding="utf-8") if readme_file.exists() else ""
+)
 
 setup(
     name="ml-pipeline-deploy",
     version="1.0.0",
-    description="Enterprise ML Pipeline Deployment Platform with 5 production-ready examples",
+    description="Enterprise ML Pipeline Deployment Platform",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="ML Pipeline Team",
@@ -78,4 +80,3 @@ setup(
     ],
     keywords="machine-learning ml-pipeline mlops deployment fastapi",
 )
-
