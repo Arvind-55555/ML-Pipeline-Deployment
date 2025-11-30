@@ -58,6 +58,12 @@ Thumbs.db
 _site/
 .github/workflows/deploy-api.yml.bak
 
+# Package builds
+dist/
+build/
+*.egg-info/
+*.egg
+
 # Temporary files
 temp_*
 *.tmp
