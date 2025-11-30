@@ -18,25 +18,28 @@ concurrency:
 
 jobs:
   deploy:
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
+        continue-on-error: true
 
       - name: Copy UI files
         run: |
           mkdir -p _site
-          cp -r ui/* _site/
+          cp -r ui/* _site/ 2>/dev/null || true
           # Create index.html from landing.html
           cp ui/landing.html _site/index.html
-          # Copy all other HTML files
-          cp ui/*.html _site/ 2>/dev/null || true
+          # Ensure api-config.js is copied
+          if [ -f ui/api-config.js ]; then
+            cp ui/api-config.js _site/api-config.js
+          fi
           echo "✅ UI files copied to _site/"
 
       - name: Create API configuration
@@ -44,26 +47,24 @@ jobs:
           cat > _site/api-config.js << 'EOF'
           // API Configuration
           // Update this URL to point to your deployed FastAPI backend
-          const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? 'http://127.0.0.1:8000'
-            : 'https://your-api-domain.com'; // Update this with your deployed API URL
+          const API_BASE_URL = (function() {
+              // Auto-detect: if running locally, use localhost
+              if (window.location.hostname === 'localhost' || 
+                  window.location.hostname === '127.0.0.1' ||
+                  window.location.hostname === '') {
+                  return 'http://127.0.0.1:8000';
+              }
+              
+              // For GitHub Pages, use your deployed API URL
+              // Update this with your actual API deployment URL
+              return 'https://your-api-domain.com'; // TODO: Replace with your API URL
+          })();
           
+          // Make it globally available
           window.API_BASE = API_BASE_URL;
+          console.log('API Base URL:', API_BASE_URL);
           EOF
           echo "✅ API configuration created"
-
-      - name: Update HTML files with API config
-        run: |
-          # Add API config script to all HTML files
-          for file in _site/*.html; do
-            if [ -f "$file" ]; then
-              # Insert API config before closing head tag
-              sed -i '/<\/head>/i <script src="api-config.js"></script>' "$file" || true
-              # Replace hardcoded API URLs
-              sed -i "s|http://127.0.0.1:8000|${API_BASE_URL:-window.API_BASE}|g" "$file" || true
-            fi
-          done
-          echo "✅ HTML files updated with API configuration"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -73,4 +74,15 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Check deployment status
+        if: failure()
+        run: |
+          echo "::error::GitHub Pages deployment failed!"
+          echo "::notice::Please enable GitHub Pages manually:"
+          echo "::notice::1. Go to Settings → Pages"
+          echo "::notice::2. Under 'Source', select 'GitHub Actions'"
+          echo "::notice::3. Save and re-run this workflow"
+          exit 1
 

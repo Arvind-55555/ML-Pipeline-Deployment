@@ -1,0 +1,62 @@
+name: Deploy to GitHub Pages (Simple)
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Build site
+        run: |
+          mkdir -p _site
+          # Copy all UI files
+          cp -r ui/* _site/ 2>/dev/null || true
+          # Set landing page
+          cp ui/landing.html _site/index.html
+          # Ensure api-config.js exists
+          if [ ! -f _site/api-config.js ]; then
+            cat > _site/api-config.js << 'EOF'
+          const API_BASE_URL = (function() {
+              if (window.location.hostname === 'localhost' || 
+                  window.location.hostname === '127.0.0.1') {
+                  return 'http://127.0.0.1:8000';
+              }
+              return 'https://your-api-domain.com';
+          })();
+          window.API_BASE = API_BASE_URL;
+          EOF
+          fi
+          echo "✅ Site built successfully"
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '_site'
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+

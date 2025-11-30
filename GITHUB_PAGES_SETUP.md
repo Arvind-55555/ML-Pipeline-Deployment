@@ -30,13 +30,14 @@ git branch -M main
 git push -u origin main
 ```
 
-### Step 2: Enable GitHub Pages
+### Step 2: Enable GitHub Pages (IMPORTANT - Do this FIRST!)
 
-1. Go to your repository on GitHub
-2. Click on **Settings**
+1. Go to your repository on GitHub: https://github.com/Arvind-55555/ML-Pipeline-Deployment
+2. Click on **Settings** (top menu bar)
 3. Scroll down to **Pages** in the left sidebar
-4. Under **Source**, select **GitHub Actions**
-5. The workflow will automatically deploy on push to main/master
+4. Under **Source**, select **GitHub Actions** (NOT "Deploy from a branch")
+5. Click **Save**
+6. ⚠️ **This must be done BEFORE pushing code or the workflow will fail!**
 
 ### Step 3: Access Your Deployed Site
 
