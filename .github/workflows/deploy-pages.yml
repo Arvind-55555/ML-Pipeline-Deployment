@@ -26,10 +26,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-        continue-on-error: true
-
       - name: Clean up disk space
         run: |
           sudo rm -rf /usr/share/dotnet
@@ -38,44 +34,54 @@ jobs:
           sudo rm -rf /opt/hostedtoolcache/CodeQL
           df -h
 
-      - name: Copy UI files
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+        continue-on-error: true
+
+      - name: Build and prepare site
         run: |
+          # Create output directory
           mkdir -p _site
-          # Copy only necessary UI files (no Python packages needed!)
-          cp -r ui/*.html _site/ 2>/dev/null || true
-          cp -r ui/*.js _site/ 2>/dev/null || true
-          cp -r ui/*.css _site/ 2>/dev/null || true
-          # Create index.html from landing.html
+          
+          # Copy all UI files
+          echo "📋 Copying UI files..."
+          cp ui/*.html _site/ 2>/dev/null || true
+          cp ui/*.js _site/ 2>/dev/null || true
+          
+          # CRITICAL: Set landing.html as index.html (the root page)
+          echo "🎯 Setting landing page as index.html..."
           cp ui/landing.html _site/index.html
-          # Ensure api-config.js is copied
+          
+          # Ensure api-config.js exists
           if [ -f ui/api-config.js ]; then
             cp ui/api-config.js _site/api-config.js
-          fi
-          echo "✅ UI files copied to _site/"
-
-      - name: Create API configuration
-        run: |
-          cat > _site/api-config.js << 'EOF'
-          // API Configuration
-          // Update this URL to point to your deployed FastAPI backend
+          else
+            cat > _site/api-config.js << 'EOF'
           const API_BASE_URL = (function() {
-              // Auto-detect: if running locally, use localhost
               if (window.location.hostname === 'localhost' || 
-                  window.location.hostname === '127.0.0.1' ||
-                  window.location.hostname === '') {
+                  window.location.hostname === '127.0.0.1') {
                   return 'http://127.0.0.1:8000';
               }
-              
-              // For GitHub Pages, use your deployed API URL
-              // Update this with your actual API deployment URL
-              return 'https://your-api-domain.com'; // TODO: Replace with your API URL
+              return 'https://your-api-domain.com';
           })();
-          
-          // Make it globally available
           window.API_BASE = API_BASE_URL;
           console.log('API Base URL:', API_BASE_URL);
           EOF
-          echo "✅ API configuration created"
+          fi
+          
+          # Verify index.html exists and is correct
+          if [ -f _site/index.html ]; then
+            echo "✅ index.html created successfully"
+            echo "📄 First 5 lines of index.html:"
+            head -5 _site/index.html
+          else
+            echo "❌ ERROR: index.html not found!"
+            exit 1
+          fi
+          
+          # List all files
+          echo "📁 All files in _site:"
+          ls -la _site/ | head -20
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -96,4 +102,3 @@ jobs:
           echo "::notice::2. Under 'Source', select 'GitHub Actions'"
           echo "::notice::3. Save and re-run this workflow"
           exit 1
-
