@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-commerce Recommendation</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .back-link { color: white; text-decoration: none; position: absolute; top: 20px; left: 20px; }
+        .content { padding: 30px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        input { width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1em; }
+        button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .recommendations {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .rec-item {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #f39c12;
+        }
+    </style>
+<script src="api-config.js">
+        const API_BASE = window.API_BASE || '';
+        </script>
+    </head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="/" class="back-link">← Back to Home</a>
+            <h1>🛒 E-commerce Recommendation</h1>
+            <p>Microsoft Recommenders</p>
+        </div>
+        <div class="content">
+            <h2>Get Recommendations</h2>
+            <form id="recForm">
+                <div class="form-group">
+                    <label>User ID</label>
+                    <input type="text" id="user_id" value="user_1" required>
+                </div>
+                <div class="form-group">
+                    <label>Number of Recommendations</label>
+                    <input type="number" id="top_k" value="10" min="1" max="50" required>
+                </div>
+                <button type="button" onclick="getRecommendations()">🎯 Get Recommendations</button>
+                <button type="button" onclick="trackBehavior()">📊 Track Behavior</button>
+                <button type="button" onclick="initializeSampleData()">🎲 Initialize Sample Data</button>
+            </form>
+            <div class="recommendations" id="recommendations">
+                <p style="color: #999; text-align: center; padding: 20px;">
+                    Click "Initialize Sample Data" to populate with demo user behaviors, then get recommendations!
+                </p>
+            </div>
+        </div>
+    </div>
+    <script>
+        async function getRecommendations() {
+            const data = {
+                user_id: document.getElementById('user_id').value,
+                top_k: parseInt(document.getElementById('top_k').value)
+            };
+            
+            try {
+                const r = await fetch(`${API_BASE}/recommendation/recommend', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                const result = await r.json();
+                showRecommendations(result);
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+        
+        async function trackBehavior() {
+            const userId = document.getElementById('user_id').value;
+            const itemId = 'item_' + Math.floor(Math.random() * 100);
+            const behaviors = ['view', 'click', 'purchase', 'rating'];
+            const behavior = behaviors[Math.floor(Math.random() * behaviors.length)];
+            
+            try {
+                await fetch(`/recommendation/track?user_id=${userId}&item_id=${itemId}&behavior_type=${behavior}`, {
+                    method: 'POST'
+                });
+                alert(`Tracked: ${userId} -> ${itemId} (${behavior})`);
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+        
+        async function initializeSampleData() {
+            try {
+                // Get recommendations will auto-initialize sample data
+                const data = {
+                    user_id: document.getElementById('user_id').value,
+                    top_k: parseInt(document.getElementById('top_k').value)
+                };
+                
+                document.getElementById('recommendations').innerHTML = '<p>Initializing sample data...</p>';
+                
+                const r = await fetch(`${API_BASE}/recommendation/recommend', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                const result = await r.json();
+                showRecommendations(result);
+                alert('✅ Sample data initialized! Recommendations are now available.');
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+        
+        function showRecommendations(result) {
+            const div = document.getElementById('recommendations');
+            if (result.recommendations && result.recommendations.length > 0) {
+                div.innerHTML = result.recommendations.map((rec, i) => `
+                    <div class="rec-item">
+                        <strong>#${i+1}</strong><br>
+                        Item: ${rec.item_id}<br>
+                        Score: ${rec.score.toFixed(3)}
+                    </div>
+                `).join('');
+            } else {
+                div.innerHTML = '<p>No recommendations available. Track some user behaviors first.</p>';
+            }
+        }
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,76 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Copy UI files
+        run: |
+          mkdir -p _site
+          cp -r ui/* _site/
+          # Create index.html from landing.html
+          cp ui/landing.html _site/index.html
+          # Copy all other HTML files
+          cp ui/*.html _site/ 2>/dev/null || true
+          echo "✅ UI files copied to _site/"
+
+      - name: Create API configuration
+        run: |
+          cat > _site/api-config.js << 'EOF'
+          // API Configuration
+          // Update this URL to point to your deployed FastAPI backend
+          const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://127.0.0.1:8000'
+            : 'https://your-api-domain.com'; // Update this with your deployed API URL
+          
+          window.API_BASE = API_BASE_URL;
+          EOF
+          echo "✅ API configuration created"
+
+      - name: Update HTML files with API config
+        run: |
+          # Add API config script to all HTML files
+          for file in _site/*.html; do
+            if [ -f "$file" ]; then
+              # Insert API config before closing head tag
+              sed -i '/<\/head>/i <script src="api-config.js"></script>' "$file" || true
+              # Replace hardcoded API URLs
+              sed -i "s|http://127.0.0.1:8000|${API_BASE_URL:-window.API_BASE}|g" "$file" || true
+            fi
+          done
+          echo "✅ HTML files updated with API configuration"
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '_site'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+

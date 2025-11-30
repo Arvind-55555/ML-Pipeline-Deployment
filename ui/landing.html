@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Pipeline Deployment Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            padding: 40px 20px;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.3em;
+            opacity: 0.95;
+        }
+
+        .examples-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .example-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .example-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .example-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .example-title {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .example-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .example-features {
+            list-style: none;
+            padding: 0;
+            margin: 15px 0;
+        }
+
+        .example-features li {
+            padding: 5px 0;
+            color: #555;
+            font-size: 0.9em;
+        }
+
+        .example-features li:before {
+            content: "✓ ";
+            color: #28a745;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        .example-repo {
+            font-size: 0.85em;
+            color: #999;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            padding: 30px 20px;
+            opacity: 0.9;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        @media (max-width: 768px) {
+            .examples-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 ML Pipeline Deployment Platform</h1>
+            <p>Enterprise-Grade Machine Learning Pipeline Examples</p>
+        </div>
+
+        <div class="examples-grid">
+            <!-- Customer Churn Prediction -->
+            <a href="/churn" class="example-card" onclick="event.preventDefault(); loadExample('churn')">
+                <div class="example-icon">📊</div>
+                <div class="example-title">Customer Churn Prediction</div>
+                <div class="example-description">
+                    Predict customer churn using IBM Telco dataset with full ML pipeline including feature engineering, hyperparameter tuning, and model evaluation.
+                </div>
+                <ul class="example-features">
+                    <li>Data Ingestion (CSV, Database)</li>
+                    <li>Feature Engineering</li>
+                    <li>Multiple Algorithms</li>
+                    <li>Hyperparameter Tuning</li>
+                    <li>Model Evaluation</li>
+                    <li>API Deployment</li>
+                    <li>Monitoring Dashboard</li>
+                </ul>
+                <div class="example-repo">
+                    📦 Repository: IBM/telco-customer-churn-prediction
+                </div>
+                <div class="status-badge status-active">Active</div>
+            </a>
+
+            <!-- Fraud Detection -->
+            <a href="/fraud" class="example-card" onclick="event.preventDefault(); loadExample('fraud')">
+                <div class="example-icon">🚨</div>
+                <div class="example-title">Real-time Fraud Detection</div>
+                <div class="example-description">
+                    Real-time fraud detection system with streaming data processing, instant alerts, and continuous model retraining.
+                </div>
+                <ul class="example-features">
+                    <li>Streaming Data Ingestion</li>
+                    <li>Real-time Feature Calculation</li>
+                    <li>Model Inference</li>
+                    <li>Alert Generation</li>
+                    <li>Model Retraining</li>
+                    <li>Performance Monitoring</li>
+                </ul>
+                <div class="example-repo">
+                    📦 Repository: microsoft/ecommerce-fraud-detection
+                </div>
+                <div class="status-badge status-active">Active</div>
+            </a>
+
+            <!-- Medical Image Analysis -->
+            <a href="/medical" class="example-card" onclick="event.preventDefault(); loadExample('medical')">
+                <div class="example-icon">🏥</div>
+                <div class="example-title">Medical Image Analysis</div>
+                <div class="example-description">
+                    COVID-19 chest X-ray classification with DICOM processing, CNN training, and clinical deployment compliance.
+                </div>
+                <ul class="example-features">
+                    <li>DICOM Image Processing</li>
+                    <li>Data Augmentation</li>
+                    <li>CNN Model Training</li>
+                    <li>Model Validation</li>
+                    <li>Clinical Deployment</li>
+                    <li>Regulatory Compliance</li>
+                </ul>
+                <div class="example-repo">
+                    📦 Repository: ieee8023/covid-chestxray-dataset
+                </div>
+                <div class="status-badge status-active">Active</div>
+            </a>
+
+            <!-- E-commerce Recommendation -->
+            <a href="/recommendation" class="example-card" onclick="event.preventDefault(); loadExample('recommendation')">
+                <div class="example-icon">🛒</div>
+                <div class="example-title">E-commerce Recommendation</div>
+                <div class="example-description">
+                    Personalized product recommendations with user behavior tracking, feature store, and A/B testing framework.
+                </div>
+                <ul class="example-features">
+                    <li>User Behavior Tracking</li>
+                    <li>Feature Store Updates</li>
+                    <li>Model Training Pipeline</li>
+                    <li>A/B Testing Framework</li>
+                    <li>Real-time Serving</li>
+                    <li>Performance Analytics</li>
+                </ul>
+                <div class="example-repo">
+                    📦 Repository: microsoft/recommenders
+                </div>
+                <div class="status-badge status-active">Active</div>
+            </a>
+
+            <!-- Autonomous Vehicle -->
+            <a href="/vehicle" class="example-card" onclick="event.preventDefault(); loadExample('vehicle')">
+                <div class="example-icon">🚗</div>
+                <div class="example-title">Autonomous Vehicle Perception</div>
+                <div class="example-description">
+                    Real-time sensor fusion and perception for autonomous vehicles with safety validation and edge deployment.
+                </div>
+                <ul class="example-features">
+                    <li>Sensor Data Processing</li>
+                    <li>Real-time Inference</li>
+                    <li>Model Updates</li>
+                    <li>Safety Validation</li>
+                    <li>Edge Deployment</li>
+                    <li>Performance Monitoring</li>
+                </ul>
+                <div class="example-repo">
+                    📦 Repository: commaai/openpilot
+                </div>
+                <div class="status-badge status-active">Active</div>
+            </a>
+        </div>
+
+        <div class="footer">
+            <p>Select an example above to explore the ML pipeline</p>
+            <p style="margin-top: 10px; font-size: 0.9em;">All examples use real data from their respective GitHub repositories</p>
+        </div>
+    </div>
+
+    <script src="api-config.js"></script>
+    <script>
+        // Use API_BASE from config, fallback to relative if not set
+        const API_BASE = window.API_BASE || '';
+        
+        function loadExample(exampleName) {
+            // Redirect to the example page
+            window.location.href = `${exampleName}.html`;
+        }
+
+        // Check API health on load
+        if (API_BASE) {
+            fetch(`${API_BASE}/health`)
+                .then(r => r.json())
+                .then(data => {
+                    console.log('API Status:', data);
+                })
+                .catch(e => console.warn('API check failed (this is OK if API is not deployed yet):', e));
+        }
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,62 @@
+pipeline:
+  name: "customer-churn-prediction"
+  version: "1.0.0"
+  type: "sklearn"
+  
+data_processing:
+  input_path: "data/raw/customer_data.csv"
+  target_column: "churn"
+  test_size: 0.2
+  random_state: 42
+  missing_values:
+    strategy: "mean"
+  scaling:
+    enabled: true
+    features: ["age", "balance", "credit_score"]
+  encoding:
+    enabled: true
+    features: ["country", "gender"]
+
+training:
+  model:
+    type: "random_forest"
+    params:
+      n_estimators: 100
+      max_depth: 10
+      random_state: 42
+  validation:
+    cv_folds: 5
+    scoring: "f1_weighted"
+
+serving:
+  api_type: "fastapi"
+  host: "0.0.0.0"
+  port: 8000
+  workers: 4
+
+deployment:
+  target: "kubernetes"
+  replicas: 3
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+  autoscaling:
+    enabled: true
+    min_replicas: 2
+    max_replicas: 10
+    target_cpu: 80
+
+monitoring:
+  enabled: true
+  metrics:
+    - "accuracy"
+    - "latency"
+    - "throughput"
+  alerts:
+    - metric: "accuracy"
+      threshold: 0.85
+      operator: "lt"

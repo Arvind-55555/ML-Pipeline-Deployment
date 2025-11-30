@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iris Classifier - ML Pipeline</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .input-hint {
+            font-size: 0.85em;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result.success {
+            background: #d4edda;
+            border: 2px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            border: 2px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .prediction-label {
+            font-size: 1.3em;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .prediction-value {
+            font-size: 2em;
+            font-weight: 800;
+            color: #667eea;
+        }
+
+        .species-info {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            font-size: 0.9em;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-indicator.online {
+            background: #28a745;
+            box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+        }
+
+        .status-indicator.offline {
+            background: #dc3545;
+        }
+    </style>
+<script src="api-config.js">
+        const API_BASE = window.API_BASE || '';
+        </script>
+    </head>
+<body>
+    <div class="container">
+        <h1>🌺 Iris Classifier</h1>
+        <p class="subtitle">Predict Iris Species from Flower Measurements</p>
+        
+        <div class="form-group">
+            <label for="sepal_length">Sepal Length (cm)</label>
+            <input type="number" id="sepal_length" step="0.1" min="0" max="10" value="5.1" required>
+            <div class="input-hint">Typical range: 4.3 - 7.9 cm</div>
+        </div>
+
+        <div class="form-group">
+            <label for="sepal_width">Sepal Width (cm)</label>
+            <input type="number" id="sepal_width" step="0.1" min="0" max="10" value="3.5" required>
+            <div class="input-hint">Typical range: 2.0 - 4.4 cm</div>
+        </div>
+
+        <div class="form-group">
+            <label for="petal_length">Petal Length (cm)</label>
+            <input type="number" id="petal_length" step="0.1" min="0" max="10" value="1.4" required>
+            <div class="input-hint">Typical range: 1.0 - 6.9 cm</div>
+        </div>
+
+        <div class="form-group">
+            <label for="petal_width">Petal Width (cm)</label>
+            <input type="number" id="petal_width" step="0.1" min="0" max="10" value="0.2" required>
+            <div class="input-hint">Typical range: 0.1 - 2.5 cm</div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-primary" onclick="predict()">🔮 Predict Species</button>
+            <button class="btn-secondary" onclick="resetForm()">🔄 Reset</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px; color: #666;">Predicting...</p>
+        </div>
+
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin;
+        const speciesNames = {
+            0: 'Setosa',
+            1: 'Versicolor',
+            2: 'Virginica'
+        };
+
+        // Check API health on load
+        checkHealth();
+
+        async function checkHealth() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                console.log('API Status:', data);
+            } catch (error) {
+                console.error('API not available:', error);
+            }
+        }
+
+        async function predict() {
+            const sepalLength = parseFloat(document.getElementById('sepal_length').value);
+            const sepalWidth = parseFloat(document.getElementById('sepal_width').value);
+            const petalLength = parseFloat(document.getElementById('petal_length').value);
+            const petalWidth = parseFloat(document.getElementById('petal_width').value);
+
+            // Validate inputs
+            if (isNaN(sepalLength) || isNaN(sepalWidth) || isNaN(petalLength) || isNaN(petalWidth)) {
+                showResult('Please fill in all fields with valid numbers.', 'error');
+                return;
+            }
+
+            const features = [sepalLength, sepalWidth, petalLength, petalWidth];
+
+            // Show loading
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('result').classList.remove('show');
+
+            try {
+                const response = await fetch(`${API_URL}/predict`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ features: features })
+                });
+
+                const data = await response.json();
+                document.getElementById('loading').classList.remove('show');
+
+                if (data.error) {
+                    showResult(`Error: ${data.error}`, 'error');
+                } else {
+                    const prediction = data.prediction !== undefined ? data.prediction : 
+                                    (data.predictions && data.predictions[0]) ? data.predictions[0] : null;
+                    
+                    if (prediction !== null && prediction !== undefined) {
+                        const speciesId = Array.isArray(prediction) ? prediction[0] : prediction;
+                        const speciesName = speciesNames[speciesId] || `Species ${speciesId}`;
+                        showResult(speciesName, 'success', speciesId);
+                    } else {
+                        showResult('Unexpected response format', 'error');
+                    }
+                }
+            } catch (error) {
+                document.getElementById('loading').classList.remove('show');
+                showResult(`Connection error: ${error.message}. Make sure the API server is running.`, 'error');
+            }
+        }
+
+        function showResult(message, type, speciesId = null) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = `result ${type} show`;
+            
+            if (type === 'success') {
+                resultDiv.innerHTML = `
+                    <div class="prediction-label">Predicted Species:</div>
+                    <div class="prediction-value">${message}</div>
+                    <div class="species-info">
+                        <strong>Species ID:</strong> ${speciesId}<br>
+                        <strong>Features used:</strong> Sepal Length, Sepal Width, Petal Length, Petal Width
+                    </div>
+                `;
+            } else {
+                resultDiv.innerHTML = `<strong>Error:</strong> ${message}`;
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('sepal_length').value = '5.1';
+            document.getElementById('sepal_width').value = '3.5';
+            document.getElementById('petal_length').value = '1.4';
+            document.getElementById('petal_width').value = '0.2';
+            document.getElementById('result').classList.remove('show');
+        }
+
+        // Allow Enter key to trigger prediction
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                predict();
+            }
+        });
+    </script>
+</body>
+</html>
+

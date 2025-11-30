@@ -1,0 +1,64 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ML Pipeline
+workspace/
+mlruns/
+*.pkl
+*.h5
+*.onnx
+*.pt
+*.pth
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# GitHub Pages
+_site/
+.github/workflows/deploy-api.yml.bak
+
+# Temporary files
+temp_*
+*.tmp
+

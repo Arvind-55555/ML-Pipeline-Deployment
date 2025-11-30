@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autonomous Vehicle Perception</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .back-link { color: white; text-decoration: none; position: absolute; top: 20px; left: 20px; }
+        .content { padding: 30px; }
+        button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .metric {
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #2c3e50;
+        }
+    </style>
+<script src="api-config.js">
+        const API_BASE = window.API_BASE || '';
+        </script>
+    </head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="/" class="back-link">← Back to Home</a>
+            <h1>🚗 Autonomous Vehicle Perception</h1>
+            <p>commaai openpilot</p>
+        </div>
+        <div class="content">
+            <h2>Real-time Sensor Inference</h2>
+            <button onclick="simulateInference()">🚀 Simulate Inference</button>
+            <button onclick="getMonitor()">📊 View Metrics</button>
+            <div class="result" id="result"></div>
+        </div>
+    </div>
+    <script>
+        async function simulateInference() {
+            const sensorData = {
+                camera: Array(224*224*3).fill(0.5),
+                lidar: [[1,2,3], [4,5,6], [7,8,9]],
+                radar: {range: 50, velocity: 10, azimuth: 0.5},
+                imu: {accel_x: 0.1, accel_y: 0.2, accel_z: 9.8},
+                gps: {latitude: 37.7749, longitude: -122.4194, altitude: 10, speed: 25}
+            };
+            
+            try {
+                const r = await fetch(`${API_BASE}/vehicle/inference', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(sensorData)
+                });
+                const result = await r.json();
+                showResult(result);
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+        
+        async function getMonitor() {
+            try {
+                const r = await fetch(`${API_BASE}/vehicle/monitor');
+                const result = await r.json();
+                showMonitor(result);
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+        
+        function showResult(result) {
+            const div = document.getElementById('result');
+            div.innerHTML = `
+                <h3>Inference Results</h3>
+                <div class="metrics">
+                    <div class="metric">
+                        <strong>Steering Angle</strong><br>
+                        ${result.steering_angle?.toFixed(3) || 'N/A'}
+                    </div>
+                    <div class="metric">
+                        <strong>Throttle</strong><br>
+                        ${result.throttle?.toFixed(3) || 'N/A'}
+                    </div>
+                    <div class="metric">
+                        <strong>Brake</strong><br>
+                        ${result.brake?.toFixed(3) || 'N/A'}
+                    </div>
+                    <div class="metric">
+                        <strong>Confidence</strong><br>
+                        ${(result.confidence * 100)?.toFixed(1) || '0'}%
+                    </div>
+                    <div class="metric">
+                        <strong>Safety Validated</strong><br>
+                        ${result.safety_validated ? '✅' : '❌'}
+                    </div>
+                    <div class="metric">
+                        <strong>Safety Score</strong><br>
+                        ${result.safety_score?.toFixed(2) || 'N/A'}
+                    </div>
+                </div>
+            `;
+        }
+        
+        function showMonitor(result) {
+            const div = document.getElementById('result');
+            div.innerHTML = `
+                <h3>Performance Metrics</h3>
+                <div class="metrics">
+                    <div class="metric">
+                        <strong>Sensor Buffer</strong><br>
+                        ${result.sensor_buffer_size || 0}
+                    </div>
+                    <div class="metric">
+                        <strong>Model Loaded</strong><br>
+                        ${result.model_loaded ? '✅' : '❌'}
+                    </div>
+                    <div class="metric">
+                        <strong>Latency</strong><br>
+                        ${result.inference_latency_ms || 0}ms
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
+

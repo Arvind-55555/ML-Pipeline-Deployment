@@ -1,0 +1,25 @@
+pipeline:
+  name: "local-iris-classifier"
+  version: "1.0.0"
+  type: "sklearn"
+
+data_processing:
+  input_path: "examples/iris_classification/data/iris.csv"
+  target_column: "species"
+  test_size: 0.2
+  random_state: 42
+  scaling:
+    enabled: true
+    features: ["sepal_length", "sepal_width", "petal_length", "petal_width"]
+
+training:
+  model:
+    type: "random_forest"
+    params:
+      n_estimators: 100
+      max_depth: 5
+      random_state: 42
+
+serving:
+  port: 8000
+  host: "127.0.0.1"

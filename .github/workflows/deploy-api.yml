@@ -1,0 +1,56 @@
+name: Deploy API to Cloud
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Deploy to Railway
+        if: false  # Set to true and configure Railway token if using Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          echo "Railway deployment would go here"
+
+      - name: Deploy to Render
+        if: false  # Set to true and configure Render if using Render
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+        run: |
+          echo "Render deployment would go here"
+
+      - name: Deploy to Heroku
+        if: false  # Set to true and configure Heroku if using Heroku
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          echo "Heroku deployment would go here"
+
+      - name: Print deployment instructions
+        run: |
+          echo "::notice::To deploy the API, choose one of the following:"
+          echo "1. Railway: https://railway.app"
+          echo "2. Render: https://render.com"
+          echo "3. Heroku: https://heroku.com"
+          echo "4. Fly.io: https://fly.io"
+          echo ""
+          echo "Update the API_BASE_URL in api-config.js after deployment"
+

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Image Analysis</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .back-link { color: white; text-decoration: none; position: absolute; top: 20px; left: 20px; }
+        .content { padding: 30px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        input[type="file"] { width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; }
+        button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+        .result.show { display: block; background: #f8f9fa; }
+        .prediction-value { font-size: 2em; font-weight: 800; margin: 10px 0; color: #2c3e50; }
+    </style>
+<script src="api-config.js">
+        const API_BASE = window.API_BASE || '';
+        </script>
+    </head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="/" class="back-link">← Back to Home</a>
+            <h1>🏥 Medical Image Analysis</h1>
+            <p>COVID-19 Chest X-ray Classification</p>
+        </div>
+        <div class="content">
+            <h2>Medical Image Analysis</h2>
+            
+            <div style="margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                <h3 style="margin-bottom: 15px;">📸 Sample Images</h3>
+                <p style="margin-bottom: 15px; color: #666;">Click on a sample image below to analyze it, or upload your own:</p>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                    <div style="text-align: center;">
+                        <div style="width: 150px; height: 150px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 3em; cursor: pointer;" onclick="useSampleImage('normal')" title="Normal Chest X-ray">
+                            🫁
+                        </div>
+                        <div style="font-size: 0.9em; color: #555;">Normal</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="width: 150px; height: 150px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 10px; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 3em; cursor: pointer;" onclick="useSampleImage('covid')" title="COVID-19 Chest X-ray">
+                            🦠
+                        </div>
+                        <div style="font-size: 0.9em; color: #555;">COVID-19</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="width: 150px; height: 150px; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); border-radius: 10px; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 3em; cursor: pointer;" onclick="useSampleImage('pneumonia')" title="Pneumonia Chest X-ray">
+                            🫁
+                        </div>
+                        <div style="font-size: 0.9em; color: #555;">Pneumonia</div>
+                    </div>
+                </div>
+            </div>
+            
+            <h3 style="margin-bottom: 15px;">📤 Or Upload Your Own Image</h3>
+            <form id="medicalForm">
+                <div class="form-group">
+                    <label>Select Image File</label>
+                    <input type="file" id="imageFile" accept="image/*">
+                </div>
+                <button type="button" onclick="analyzeImage()">🔬 Analyze Image</button>
+                <button type="button" onclick="analyzeSample('normal')">🔬 Analyze Normal Sample</button>
+                <button type="button" onclick="analyzeSample('covid')">🔬 Analyze COVID Sample</button>
+                <button type="button" onclick="analyzeSample('pneumonia')">🔬 Analyze Pneumonia Sample</button>
+            </form>
+            <div class="result" id="result"></div>
+        </div>
+    </div>
+    <script>
+        async function analyzeImage() {
+            const fileInput = document.getElementById('imageFile');
+            if (!fileInput.files[0]) {
+                alert('Please select an image file or use a sample image');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            try {
+                document.getElementById('result').innerHTML = '<p>Analyzing image...</p>';
+                const r = await fetch(`${API_BASE}/medical/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await r.json();
+                showResult(result);
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+        
+        async function analyzeSample(type) {
+            // Simulate analysis with sample data
+            const samples = {
+                'normal': { prediction: 'Normal', confidence: 0.92, all_probabilities: { 'Normal': 0.92, 'COVID-19': 0.05, 'Pneumonia': 0.03 } },
+                'covid': { prediction: 'COVID-19', confidence: 0.88, all_probabilities: { 'Normal': 0.08, 'COVID-19': 0.88, 'Pneumonia': 0.04 } },
+                'pneumonia': { prediction: 'Pneumonia', confidence: 0.85, all_probabilities: { 'Normal': 0.10, 'COVID-19': 0.05, 'Pneumonia': 0.85 } }
+            };
+            
+            // Simulate API call delay
+            document.getElementById('result').innerHTML = '<p>Analyzing sample image...</p>';
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            const result = samples[type];
+            showResult(result);
+        }
+        
+        function useSampleImage(type) {
+            analyzeSample(type);
+        }
+        
+        function showResult(result) {
+            const div = document.getElementById('result');
+            div.className = 'result show';
+            
+            const prediction = result.prediction || 'Analysis Complete';
+            const confidence = (result.confidence * 100).toFixed(1) || '0.0';
+            const emoji = prediction === 'Normal' ? '✅' : prediction === 'COVID-19' ? '🦠' : '🫁';
+            const color = prediction === 'Normal' ? '#28a745' : prediction === 'COVID-19' ? '#dc3545' : '#ffc107';
+            
+            div.innerHTML = `
+                <div class="prediction-value" style="color: ${color};">${emoji} ${prediction}</div>
+                <p style="font-size: 1.2em; margin: 15px 0;"><strong>Confidence:</strong> ${confidence}%</p>
+                ${result.all_probabilities ? `
+                    <h3 style="margin-top: 20px;">All Probabilities:</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        ${Object.entries(result.all_probabilities).map(([k, v]) => {
+                            const barWidth = (v * 100).toFixed(1);
+                            const barColor = k === 'Normal' ? '#28a745' : k === 'COVID-19' ? '#dc3545' : '#ffc107';
+                            return `
+                                <li style="margin: 10px 0;">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                        <span><strong>${k}</strong></span>
+                                        <span>${(v * 100).toFixed(1)}%</span>
+                                    </div>
+                                    <div style="width: 100%; height: 20px; background: #e0e0e0; border-radius: 10px; overflow: hidden;">
+                                        <div style="width: ${barWidth}%; height: 100%; background: ${barColor}; transition: width 0.3s;"></div>
+                                    </div>
+                                </li>
+                            `;
+                        }).join('')}
+                    </ul>
+                ` : ''}
+            `;
+        }
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Fraud Detection</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .back-link { color: white; text-decoration: none; position: absolute; top: 20px; left: 20px; }
+        .content { padding: 30px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        input { width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1em; }
+        button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+        .result.show { display: block; }
+        .result.fraud {
+            background: #f8d7da;
+            border: 2px solid #f5c6cb;
+            color: #721c24;
+        }
+        .result.safe {
+            background: #d4edda;
+            border: 2px solid #c3e6cb;
+            color: #155724;
+        }
+        .prediction-value { font-size: 2em; font-weight: 800; margin: 10px 0; }
+    </style>
+<script src="api-config.js">
+        const API_BASE = window.API_BASE || '';
+        </script>
+    </head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="/" class="back-link">← Back to Home</a>
+            <h1>🚨 Real-time Fraud Detection</h1>
+            <p>Microsoft E-commerce Fraud Detection</p>
+        </div>
+        <div class="content">
+            <h2>Transaction Analysis</h2>
+            <form id="fraudForm">
+                <div class="form-group">
+                    <label>User ID</label>
+                    <input type="text" id="user_id" value="user_123" required>
+                </div>
+                <div class="form-group">
+                    <label>Transaction Amount ($)</label>
+                    <input type="number" id="amount" value="150.00" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>Transaction ID (optional)</label>
+                    <input type="text" id="transaction_id" placeholder="Auto-generated if empty">
+                </div>
+                <button type="button" onclick="analyzeFraud()">🔍 Analyze Transaction</button>
+            </form>
+            <div class="result" id="result"></div>
+        </div>
+    </div>
+    <script>
+        async function analyzeFraud() {
+            const data = {
+                user_id: document.getElementById('user_id').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                transaction_id: document.getElementById('transaction_id').value || undefined
+            };
+            
+            try {
+                const r = await fetch(`${API_BASE}/fraud/analyze', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                const result = await r.json();
+                showResult(result);
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+        
+        function showResult(result) {
+            const div = document.getElementById('result');
+            div.className = `result show ${result.is_fraud ? 'fraud' : 'safe'}`;
+            div.innerHTML = `
+                <div class="prediction-value">
+                    ${result.is_fraud ? '🚨 FRAUD DETECTED' : '✅ TRANSACTION SAFE'}
+                </div>
+                <p>Fraud Probability: ${(result.fraud_probability * 100).toFixed(1)}%</p>
+                <p>Transaction ID: ${result.transaction_id || 'N/A'}</p>
+            `;
+        }
+    </script>
+</body>
+</html>
+

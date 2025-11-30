@@ -1,0 +1,45 @@
+pipeline:
+  name: "real-time-stock-predictor"
+  version: "1.0.0"
+  type: "real_time"
+
+real_time:
+  data_source:
+    type: "websocket"  # or "kafka", "api", "sensor"
+    uri: "wss://stream.binance.com:9443/ws/btcusdt@trade"
+    update_interval: 1000  # ms
+    
+  features:
+    window_size: 50
+    feature_engineering:
+      - "moving_average"
+      - "rsi"
+      - "volatility"
+      - "volume_profile"
+  
+  training:
+    trigger: "time_based"  # or "data_driven", "performance_based"
+    schedule: "0 2 * * *"  # Daily at 2 AM
+    min_data_points: 1000
+    retrain_on_drift: true
+    drift_threshold: 0.05
+  
+  serving:
+    api_ports: [8000, 8001, 8002]  # Multiple instances for load balancing
+    health_check_interval: 30
+    auto_scale: true
+    max_instances: 5
+  
+  monitoring:
+    metrics:
+      - "prediction_latency"
+      - "throughput"
+      - "model_accuracy"
+      - "data_drift"
+    alerts:
+      - metric: "model_accuracy"
+        threshold: 0.85
+        operator: "lt"
+      - metric: "prediction_latency" 
+        threshold: 100  # ms
+        operator: "gt"

@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Pipeline - Unified Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e0e0e0;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 15px 30px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            font-size: 1em;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+        }
+
+        .tab:hover {
+            background: #e9ecef;
+            color: #333;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: white;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-section, .results-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .input-hint {
+            font-size: 0.85em;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e9ecef;
+            color: #666;
+        }
+
+        .btn-secondary:hover {
+            background: #dee2e6;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result.success {
+            background: #d4edda;
+            border: 2px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .result.error {
+            background: #f8d7da;
+            border: 2px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .result.anomaly {
+            background: #f8d7da;
+            border: 2px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .result.normal {
+            background: #d4edda;
+            border: 2px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .prediction-value {
+            font-size: 2em;
+            font-weight: 800;
+            color: #667eea;
+            margin: 10px 0;
+        }
+
+        .anomaly-indicator {
+            font-size: 1.5em;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .metric {
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .metric-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .readings-log {
+            max-height: 400px;
+            overflow-y: auto;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .reading-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+            background: #f8f9fa;
+        }
+
+        .reading-item.anomaly {
+            border-left-color: #e74c3c;
+            background: #fff5f5;
+        }
+
+        .reading-time {
+            font-size: 0.8em;
+            color: #999;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+<script src="api-config.js"></script>
+    </head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 ML Pipeline Dashboard</h1>
+            <p>Unified Interface for All ML Examples</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('iris')">🌺 Iris Classifier</button>
+            <button class="tab" onclick="switchTab('iot')">🏭 IoT Sensors</button>
+            <button class="tab" onclick="switchTab('stocks')">📈 Stock Prediction</button>
+            <button class="tab" onclick="switchTab('sentiment')">💬 Sentiment Analysis</button>
+            <button class="tab" onclick="switchTab('coming-soon')">➕ More Examples</button>
+        </div>
+
+        <!-- Iris Classifier Tab -->
+        <div id="iris" class="tab-content active">
+            <h2 style="margin-bottom: 20px; color: #2c3e50;">Iris Species Classification</h2>
+            <div class="content-grid">
+                <div class="form-section">
+                    <div class="form-group">
+                        <label for="iris_sepal_length">Sepal Length (cm)</label>
+                        <input type="number" id="iris_sepal_length" step="0.1" min="0" max="10" value="5.1" required>
+                        <div class="input-hint">Typical range: 4.3 - 7.9 cm</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="iris_sepal_width">Sepal Width (cm)</label>
+                        <input type="number" id="iris_sepal_width" step="0.1" min="0" max="10" value="3.5" required>
+                        <div class="input-hint">Typical range: 2.0 - 4.4 cm</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="iris_petal_length">Petal Length (cm)</label>
+                        <input type="number" id="iris_petal_length" step="0.1" min="0" max="10" value="1.4" required>
+                        <div class="input-hint">Typical range: 1.0 - 6.9 cm</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="iris_petal_width">Petal Width (cm)</label>
+                        <input type="number" id="iris_petal_width" step="0.1" min="0" max="10" value="0.2" required>
+                        <div class="input-hint">Typical range: 0.1 - 2.5 cm</div>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn-primary" onclick="predictIris()">🔮 Predict Species</button>
+                        <button class="btn-secondary" onclick="resetIrisForm()">🔄 Reset</button>
+                    </div>
+
+                    <div class="loading" id="iris_loading">
+                        <div class="spinner"></div>
+                        <p style="margin-top: 10px; color: #666;">Predicting...</p>
+                    </div>
+
+                    <div class="result" id="iris_result"></div>
+                </div>
+
+                <div class="results-section">
+                    <h3 style="margin-bottom: 15px; color: #2c3e50;">Prediction History</h3>
+                    <div class="readings-log" id="iris_log">
+                        <p style="color: #999; text-align: center;">No predictions yet. Submit data to see results.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- IoT Sensors Tab -->
+        <div id="iot" class="tab-content">
+            <h2 style="margin-bottom: 20px; color: #2c3e50;">IoT Sensor Anomaly Detection</h2>
+            <div class="content-grid">
+                <div class="form-section">
+                    <div class="form-group">
+                        <label for="iot_temperature">Temperature (°C)</label>
+                        <input type="number" id="iot_temperature" step="0.1" min="0" max="50" value="21.5" required>
+                        <div class="input-hint">Normal range: 19.0 - 24.0 °C</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="iot_humidity">Humidity (%)</label>
+                        <input type="number" id="iot_humidity" step="0.1" min="0" max="100" value="50.0" required>
+                        <div class="input-hint">Normal range: 45.0 - 55.0 %</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="iot_pressure">Pressure (hPa)</label>
+                        <input type="number" id="iot_pressure" step="0.1" min="900" max="1100" value="1013.25" required>
+                        <div class="input-hint">Normal range: 1000.0 - 1020.0 hPa</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="iot_vibration">Vibration (g)</label>
+                        <input type="number" id="iot_vibration" step="0.1" min="0" max="20" value="2.5" required>
+                        <div class="input-hint">Normal range: 0.0 - 8.0 g</div>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn-primary" onclick="analyzeIoT()">🔍 Analyze Sensor</button>
+                        <button class="btn-secondary" onclick="resetIoTForm()">🔄 Reset</button>
+                    </div>
+
+                    <div class="loading" id="iot_loading">
+                        <div class="spinner"></div>
+                        <p style="margin-top: 10px; color: #666;">Analyzing...</p>
+                    </div>
+
+                    <div class="result" id="iot_result"></div>
+                </div>
+
+                <div class="results-section">
+                    <h3 style="margin-bottom: 15px; color: #2c3e50;">Recent Readings</h3>
+                    <div class="readings-log" id="iot_log">
+                        <p style="color: #999; text-align: center;">No readings yet. Submit sensor data to see results.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stock Prediction Tab -->
+        <div id="stocks" class="tab-content">
+            <h2 style="margin-bottom: 20px; color: #2c3e50;">Stock Price Movement Prediction</h2>
+            <div class="content-grid">
+                <div class="form-section">
+                    <div class="form-group">
+                        <label for="stock_symbol">Stock Symbol</label>
+                        <input type="text" id="stock_symbol" placeholder="AAPL" value="AAPL" required style="text-transform: uppercase;">
+                        <div class="input-hint">Enter stock ticker symbol (e.g., AAPL, GOOGL, MSFT, TSLA)</div>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn-primary" onclick="predictStock()">📈 Predict Movement</button>
+                        <button class="btn-secondary" onclick="resetStockForm()">🔄 Reset</button>
+                    </div>
+
+                    <div class="loading" id="stock_loading">
+                        <div class="spinner"></div>
+                        <p style="margin-top: 10px; color: #666;">Analyzing stock data...</p>
+                    </div>
+
+                    <div class="result" id="stock_result"></div>
+                </div>
+
+                <div class="results-section">
+                    <h3 style="margin-bottom: 15px; color: #2c3e50;">Prediction History</h3>
+                    <div class="readings-log" id="stock_log">
+                        <p style="color: #999; text-align: center;">No predictions yet. Enter a stock symbol to see results.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sentiment Analysis Tab -->
+        <div id="sentiment" class="tab-content">
+            <h2 style="margin-bottom: 20px; color: #2c3e50;">Text Sentiment Analysis</h2>
+            <div class="content-grid">
+                <div class="form-section">
+                    <div class="form-group">
+                        <label for="sentiment_text">Enter Text</label>
+                        <textarea id="sentiment_text" rows="6" placeholder="Enter text to analyze sentiment..." style="width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1em; font-family: inherit; resize: vertical;" required>I love this product! It's amazing and works perfectly.</textarea>
+                        <div class="input-hint">Enter any text to analyze its sentiment (positive, negative, or neutral)</div>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn-primary" onclick="analyzeSentiment()">💬 Analyze Sentiment</button>
+                        <button class="btn-secondary" onclick="resetSentimentForm()">🔄 Reset</button>
+                    </div>
+
+                    <div class="loading" id="sentiment_loading">
+                        <div class="spinner"></div>
+                        <p style="margin-top: 10px; color: #666;">Analyzing sentiment...</p>
+                    </div>
+
+                    <div class="result" id="sentiment_result"></div>
+                </div>
+
+                <div class="results-section">
+                    <h3 style="margin-bottom: 15px; color: #2c3e50;">Analysis History</h3>
+                    <div class="readings-log" id="sentiment_log">
+                        <p style="color: #999; text-align: center;">No analyses yet. Enter text to see results.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Coming Soon Tab -->
+        <div id="coming-soon" class="tab-content">
+            <div style="text-align: center; padding: 60px 20px;">
+                <h2 style="color: #2c3e50; margin-bottom: 20px;">More Examples Coming Soon</h2>
+                <p style="color: #666; font-size: 1.1em; margin-bottom: 30px;">
+                    Additional ML pipeline examples will be added here.
+                </p>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; max-width: 800px; margin: 0 auto;">
+                    <div style="padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                        <div style="font-size: 2em; margin-bottom: 10px;">📈</div>
+                        <h3>Stock Prediction</h3>
+                        <p style="font-size: 0.9em; color: #666;">Real-time stock market predictions</p>
+                    </div>
+                    <div style="padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                        <div style="font-size: 2em; margin-bottom: 10px;">🖼️</div>
+                        <h3>Image Classification</h3>
+                        <p style="font-size: 0.9em; color: #666;">Computer vision models</p>
+                    </div>
+                    <div style="padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                        <div style="font-size: 2em; margin-bottom: 10px;">💬</div>
+                        <h3>NLP Analysis</h3>
+                        <p style="font-size: 0.9em; color: #666;">Text sentiment and analysis</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        const speciesNames = {0: 'Setosa', 1: 'Versicolor', 2: 'Virginica'};
+        let irisCount = 0;
+        let iotCount = 0;
+
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Iris Classifier Functions
+        async function predictIris() {
+            const sepalLength = parseFloat(document.getElementById('iris_sepal_length').value);
+            const sepalWidth = parseFloat(document.getElementById('iris_sepal_width').value);
+            const petalLength = parseFloat(document.getElementById('iris_petal_length').value);
+            const petalWidth = parseFloat(document.getElementById('iris_petal_width').value);
+
+            if (isNaN(sepalLength) || isNaN(sepalWidth) || isNaN(petalLength) || isNaN(petalWidth)) {
+                showIrisResult('Please fill in all fields with valid numbers.', 'error');
+                return;
+            }
+
+            const features = [sepalLength, sepalWidth, petalLength, petalWidth];
+            document.getElementById('iris_loading').classList.add('show');
+            document.getElementById('iris_result').classList.remove('show');
+
+            try {
+                const response = await fetch(`${API_BASE}/predict`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({features: features})
+                });
+
+                const data = await response.json();
+                document.getElementById('iris_loading').classList.remove('show');
+
+                if (data.error) {
+                    showIrisResult(`Error: ${data.error}`, 'error');
+                } else {
+                    const prediction = data.prediction !== undefined ? data.prediction : 
+                                    (data.predictions && data.predictions[0]) ? data.predictions[0] : null;
+                    
+                    if (prediction !== null && prediction !== undefined) {
+                        const speciesId = Array.isArray(prediction) ? prediction[0] : prediction;
+                        const speciesName = speciesNames[speciesId] || `Species ${speciesId}`;
+                        showIrisResult(speciesName, 'success', speciesId, features);
+                        addIrisToLog(features, speciesName, speciesId);
+                    } else {
+                        showIrisResult('Unexpected response format', 'error');
+                    }
+                }
+            } catch (error) {
+                document.getElementById('iris_loading').classList.remove('show');
+                showIrisResult(`Connection error: ${error.message}`, 'error');
+            }
+        }
+
+        function showIrisResult(message, type, speciesId = null, features = null) {
+            const resultDiv = document.getElementById('iris_result');
+            resultDiv.className = `result ${type} show`;
+            
+            if (type === 'success') {
+                resultDiv.innerHTML = `
+                    <div style="font-weight: 700; margin-bottom: 10px;">Predicted Species:</div>
+                    <div class="prediction-value">${message}</div>
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(0,0,0,0.1); font-size: 0.9em;">
+                        <strong>Species ID:</strong> ${speciesId}<br>
+                        <strong>Features:</strong> Sepal L=${features[0]}, Sepal W=${features[1]}, Petal L=${features[2]}, Petal W=${features[3]}
+                    </div>
+                `;
+            } else {
+                resultDiv.innerHTML = `<strong>Error:</strong> ${message}`;
+            }
+        }
+
+        function addIrisToLog(features, species, id) {
+            const logDiv = document.getElementById('iris_log');
+            irisCount++;
+            if (irisCount === 1) logDiv.innerHTML = '';
+            
+            const item = document.createElement('div');
+            item.className = 'reading-item';
+            item.innerHTML = `
+                <div class="reading-time">${new Date().toLocaleTimeString()} - Prediction #${irisCount}</div>
+                <div style="margin-top: 5px;"><strong>${species}</strong> (ID: ${id})</div>
+                <div style="margin-top: 5px; font-size: 0.9em; color: #666;">
+                    SL: ${features[0]}, SW: ${features[1]}, PL: ${features[2]}, PW: ${features[3]}
+                </div>
+            `;
+            logDiv.insertBefore(item, logDiv.firstChild);
+            while (logDiv.children.length > 20) logDiv.removeChild(logDiv.lastChild);
+        }
+
+        function resetIrisForm() {
+            document.getElementById('iris_sepal_length').value = '5.1';
+            document.getElementById('iris_sepal_width').value = '3.5';
+            document.getElementById('iris_petal_length').value = '1.4';
+            document.getElementById('iris_petal_width').value = '0.2';
+            document.getElementById('iris_result').classList.remove('show');
+        }
+
+        // IoT Sensor Functions
+        async function analyzeIoT() {
+            const temperature = parseFloat(document.getElementById('iot_temperature').value);
+            const humidity = parseFloat(document.getElementById('iot_humidity').value);
+            const pressure = parseFloat(document.getElementById('iot_pressure').value);
+            const vibration = parseFloat(document.getElementById('iot_vibration').value);
+
+            if (isNaN(temperature) || isNaN(humidity) || isNaN(pressure) || isNaN(vibration)) {
+                showIoTResult('Please fill in all fields with valid numbers.', 'error');
+                return;
+            }
+
+            const sensorData = {temperature, humidity, pressure, vibration};
+            document.getElementById('iot_loading').classList.add('show');
+            document.getElementById('iot_result').classList.remove('show');
+
+            try {
+                const response = await fetch(`${API_BASE}/iot/analyze`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(sensorData)
+                });
+
+                const data = await response.json();
+                document.getElementById('iot_loading').classList.remove('show');
+
+                if (data.error) {
+                    showIoTResult(`Error: ${data.error}`, 'error');
+                } else {
+                    showIoTResult(data, data.is_anomaly ? 'anomaly' : 'normal');
+                    addIoTToLog(sensorData, data);
+                }
+            } catch (error) {
+                document.getElementById('iot_loading').classList.remove('show');
+                showIoTResult(`Connection error: ${error.message}`, 'error');
+            }
+        }
+
+        function showIoTResult(data, type) {
+            const resultDiv = document.getElementById('iot_result');
+            resultDiv.className = `result ${type} show`;
+            
+            if (type === 'error') {
+                resultDiv.innerHTML = `<strong>Error:</strong> ${data}`;
+            } else {
+                const isAnomaly = data.is_anomaly;
+                const anomalies = data.anomalies || [];
+                
+                resultDiv.innerHTML = `
+                    <div class="anomaly-indicator">
+                        ${isAnomaly ? '🚨 ANOMALY DETECTED' : '✅ NORMAL'}
+                    </div>
+                    ${anomalies.length > 0 ? `
+                        <div style="margin-top: 10px;">
+                            <strong>Anomalies:</strong>
+                            <ul style="margin-top: 5px; padding-left: 20px;">
+                                ${anomalies.map(a => `<li>${a}</li>`).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                    <div class="metrics-grid">
+                        <div class="metric">
+                            <div class="metric-label">Temperature</div>
+                            <div class="metric-value">${data.temperature?.toFixed(2) || 'N/A'} °C</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Humidity</div>
+                            <div class="metric-value">${data.humidity?.toFixed(2) || 'N/A'} %</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Pressure</div>
+                            <div class="metric-value">${data.pressure?.toFixed(2) || 'N/A'} hPa</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Vibration</div>
+                            <div class="metric-value">${data.vibration?.toFixed(2) || 'N/A'} g</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function addIoTToLog(sensorData, result) {
+            const logDiv = document.getElementById('iot_log');
+            iotCount++;
+            if (iotCount === 1) logDiv.innerHTML = '';
+            
+            const isAnomaly = result.is_anomaly;
+            const anomalies = result.anomalies || [];
+            
+            const item = document.createElement('div');
+            item.className = `reading-item ${isAnomaly ? 'anomaly' : ''}`;
+            item.innerHTML = `
+                <div class="reading-time">${new Date().toLocaleTimeString()} - Reading #${iotCount}</div>
+                <div style="margin-top: 5px;">
+                    <strong>${isAnomaly ? '🚨 ANOMALY' : '✅ Normal'}</strong>
+                    ${anomalies.length > 0 ? ` - ${anomalies.join(', ')}` : ''}
+                </div>
+                <div style="margin-top: 5px; font-size: 0.9em; color: #666;">
+                    Temp: ${sensorData.temperature.toFixed(1)}°C | 
+                    Hum: ${sensorData.humidity.toFixed(1)}% | 
+                    Press: ${sensorData.pressure.toFixed(1)}hPa | 
+                    Vib: ${sensorData.vibration.toFixed(1)}g
+                </div>
+            `;
+            logDiv.insertBefore(item, logDiv.firstChild);
+            while (logDiv.children.length > 20) logDiv.removeChild(logDiv.lastChild);
+        }
+
+        function resetIoTForm() {
+            document.getElementById('iot_temperature').value = '21.5';
+            document.getElementById('iot_humidity').value = '50.0';
+            document.getElementById('iot_pressure').value = '1013.25';
+            document.getElementById('iot_vibration').value = '2.5';
+            document.getElementById('iot_result').classList.remove('show');
+        }
+
+        // Stock Prediction Functions
+        let stockCount = 0;
+        async function predictStock() {
+            const symbol = document.getElementById('stock_symbol').value.toUpperCase().trim();
+            if (!symbol) {
+                showStockResult('Please enter a stock symbol.', 'error');
+                return;
+            }
+
+            document.getElementById('stock_loading').classList.add('show');
+            document.getElementById('stock_result').classList.remove('show');
+
+            try {
+                const response = await fetch(`${API_BASE}/stocks/predict`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({symbol: symbol})
+                });
+
+                const data = await response.json();
+                document.getElementById('stock_loading').classList.remove('show');
+
+                if (data.error) {
+                    showStockResult(`Error: ${data.error}`, 'error');
+                } else {
+                    showStockResult(data, 'success');
+                    addStockToLog(symbol, data);
+                }
+            } catch (error) {
+                document.getElementById('stock_loading').classList.remove('show');
+                showStockResult(`Connection error: ${error.message}`, 'error');
+            }
+        }
+
+        function showStockResult(data, type) {
+            const resultDiv = document.getElementById('stock_result');
+            resultDiv.className = `result ${type} show`;
+            
+            if (type === 'success' && data.prediction) {
+                const direction = data.prediction;
+                const directionEmoji = direction === 'UP' ? '📈' : direction === 'DOWN' ? '📉' : '➡️';
+                const directionColor = direction === 'UP' ? '#28a745' : direction === 'DOWN' ? '#dc3545' : '#6c757d';
+                
+                resultDiv.innerHTML = `
+                    <div style="font-weight: 700; margin-bottom: 10px;">Prediction for ${data.symbol}:</div>
+                    <div style="font-size: 2em; font-weight: 800; color: ${directionColor}; margin: 10px 0;">
+                        ${directionEmoji} ${direction}
+                    </div>
+                    <div class="metrics-grid">
+                        <div class="metric">
+                            <div class="metric-label">Current Price</div>
+                            <div class="metric-value">$${data.current_price?.toFixed(2) || 'N/A'}</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Price Change</div>
+                            <div class="metric-value" style="color: ${data.price_change_pct >= 0 ? '#28a745' : '#dc3545'}">
+                                ${data.price_change_pct >= 0 ? '+' : ''}${data.price_change_pct?.toFixed(2) || '0.00'}%
+                            </div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Confidence</div>
+                            <div class="metric-value">${(data.confidence * 100)?.toFixed(1) || '0'}%</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                resultDiv.innerHTML = `<strong>Error:</strong> ${data.error || 'Unknown error'}`;
+            }
+        }
+
+        function addStockToLog(symbol, data) {
+            const logDiv = document.getElementById('stock_log');
+            stockCount++;
+            if (stockCount === 1) logDiv.innerHTML = '';
+            
+            const item = document.createElement('div');
+            item.className = 'reading-item';
+            const direction = data.prediction || 'UNKNOWN';
+            item.innerHTML = `
+                <div class="reading-time">${new Date().toLocaleTimeString()} - Prediction #${stockCount}</div>
+                <div style="margin-top: 5px;"><strong>${symbol}</strong>: ${direction}</div>
+                <div style="margin-top: 5px; font-size: 0.9em; color: #666;">
+                    Price: $${data.current_price?.toFixed(2) || 'N/A'} | 
+                    Change: ${data.price_change_pct >= 0 ? '+' : ''}${data.price_change_pct?.toFixed(2) || '0.00'}%
+                </div>
+            `;
+            logDiv.insertBefore(item, logDiv.firstChild);
+            while (logDiv.children.length > 20) logDiv.removeChild(logDiv.lastChild);
+        }
+
+        function resetStockForm() {
+            document.getElementById('stock_symbol').value = 'AAPL';
+            document.getElementById('stock_result').classList.remove('show');
+        }
+
+        // Sentiment Analysis Functions
+        let sentimentCount = 0;
+        async function analyzeSentiment() {
+            const text = document.getElementById('sentiment_text').value.trim();
+            if (!text) {
+                showSentimentResult('Please enter some text to analyze.', 'error');
+                return;
+            }
+
+            document.getElementById('sentiment_loading').classList.add('show');
+            document.getElementById('sentiment_result').classList.remove('show');
+
+            try {
+                const response = await fetch(`${API_BASE}/sentiment/analyze`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({text: text})
+                });
+
+                const data = await response.json();
+                document.getElementById('sentiment_loading').classList.remove('show');
+
+                if (data.error) {
+                    showSentimentResult(`Error: ${data.error}`, 'error');
+                } else {
+                    showSentimentResult(data, 'success');
+                    addSentimentToLog(text, data);
+                }
+            } catch (error) {
+                document.getElementById('sentiment_loading').classList.remove('show');
+                showSentimentResult(`Connection error: ${error.message}`, 'error');
+            }
+        }
+
+        function showSentimentResult(data, type) {
+            const resultDiv = document.getElementById('sentiment_result');
+            resultDiv.className = `result ${type} show`;
+            
+            if (type === 'success') {
+                const sentiment = data.sentiment || 'neutral';
+                const confidence = (data.confidence * 100)?.toFixed(1) || '0';
+                const sentimentEmoji = sentiment === 'positive' ? '😊' : sentiment === 'negative' ? '😞' : '😐';
+                const sentimentColor = sentiment === 'positive' ? '#28a745' : sentiment === 'negative' ? '#dc3545' : '#6c757d';
+                
+                resultDiv.innerHTML = `
+                    <div style="font-weight: 700; margin-bottom: 10px;">Sentiment Analysis:</div>
+                    <div style="font-size: 2em; font-weight: 800; color: ${sentimentColor}; margin: 10px 0;">
+                        ${sentimentEmoji} ${sentiment.toUpperCase()}
+                    </div>
+                    <div class="metrics-grid">
+                        <div class="metric">
+                            <div class="metric-label">Confidence</div>
+                            <div class="metric-value">${confidence}%</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Method</div>
+                            <div class="metric-value" style="font-size: 0.9em;">${data.method || 'transformer'}</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                resultDiv.innerHTML = `<strong>Error:</strong> ${data}`;
+            }
+        }
+
+        function addSentimentToLog(text, data) {
+            const logDiv = document.getElementById('sentiment_log');
+            sentimentCount++;
+            if (sentimentCount === 1) logDiv.innerHTML = '';
+            
+            const item = document.createElement('div');
+            item.className = 'reading-item';
+            const sentiment = data.sentiment || 'neutral';
+            const preview = text.length > 50 ? text.substring(0, 50) + '...' : text;
+            item.innerHTML = `
+                <div class="reading-time">${new Date().toLocaleTimeString()} - Analysis #${sentimentCount}</div>
+                <div style="margin-top: 5px;"><strong>${sentiment.toUpperCase()}</strong> (${(data.confidence * 100).toFixed(1)}%)</div>
+                <div style="margin-top: 5px; font-size: 0.9em; color: #666;">${preview}</div>
+            `;
+            logDiv.insertBefore(item, logDiv.firstChild);
+            while (logDiv.children.length > 20) logDiv.removeChild(logDiv.lastChild);
+        }
+
+        function resetSentimentForm() {
+            document.getElementById('sentiment_text').value = 'I love this product! It\'s amazing and works perfectly.';
+            document.getElementById('sentiment_result').classList.remove('show');
+        }
+
+        // Enter key support
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                const activeTab = document.querySelector('.tab-content.active').id;
+                if (activeTab === 'iris') predictIris();
+                if (activeTab === 'iot') analyzeIoT();
+                if (activeTab === 'stocks') predictStock();
+                if (activeTab === 'sentiment') analyzeSentiment();
+            }
+        });
+    </script>
+</body>
+</html>
+
