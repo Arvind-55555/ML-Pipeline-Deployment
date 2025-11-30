@@ -19,14 +19,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Clean up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          df -h
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
       - name: Build site
         run: |
           mkdir -p _site
-          # Copy all UI files
-          cp -r ui/* _site/ 2>/dev/null || true
+          # Copy only necessary UI files (no Python packages needed!)
+          cp -r ui/*.html _site/ 2>/dev/null || true
+          cp -r ui/*.js _site/ 2>/dev/null || true
+          cp -r ui/*.css _site/ 2>/dev/null || true
           # Set landing page
           cp ui/landing.html _site/index.html
           # Ensure api-config.js exists

@@ -1,0 +1,62 @@
+name: Deploy to GitHub Pages (Minimal)
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          df -h
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+        continue-on-error: true
+
+      - name: Build static site
+        run: |
+          mkdir -p _site
+          # Copy only HTML, JS, CSS files - no Python needed!
+          find ui -type f \( -name "*.html" -o -name "*.js" -o -name "*.css" \) -exec cp --parents {} _site/ \;
+          # Set landing page as index
+          cp ui/landing.html _site/index.html
+          # Create API config if missing
+          [ -f ui/api-config.js ] && cp ui/api-config.js _site/api-config.js || \
+          cat > _site/api-config.js << 'EOF'
+          const API_BASE_URL = window.location.hostname.match(/localhost|127\.0\.0\.1/) 
+            ? 'http://127.0.0.1:8000' 
+            : 'https://your-api-domain.com';
+          window.API_BASE = API_BASE_URL;
+          EOF
+          echo "✅ Static site built (no Python packages needed)"
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '_site'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
