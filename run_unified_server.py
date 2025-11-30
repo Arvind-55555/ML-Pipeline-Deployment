@@ -6,16 +6,13 @@ Based on real GitHub repositories
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, UploadFile, File
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from pathlib import Path
 from typing import Optional
 import logging
 import numpy as np
-import pandas as pd
-import io
 
 # Import all pipelines
 from examples.customer_churn.churn_pipeline import CustomerChurnPipeline
@@ -52,6 +49,7 @@ if landing_path.exists():
     landing_html = landing_path.read_text()
     logger.info("✅ Landing page loaded")
 
+
 # Request models
 class CustomerData(BaseModel):
     tenure: int
@@ -73,6 +71,7 @@ class CustomerData(BaseModel):
     PaperlessBilling: str = "Yes"
     PaymentMethod: str = "Electronic check"
 
+
 class TransactionData(BaseModel):
     user_id: str
     amount: float
@@ -80,9 +79,11 @@ class TransactionData(BaseModel):
     hour: Optional[int] = None
     day_of_week: Optional[int] = None
 
+
 class RecommendationRequest(BaseModel):
     user_id: str
     top_k: int = 10
+
 
 class VehicleSensorData(BaseModel):
     camera: Optional[list] = None
@@ -91,10 +92,12 @@ class VehicleSensorData(BaseModel):
     imu: Optional[dict] = None
     gps: Optional[dict] = None
 
+
 # Landing Page
 @app.get("/", response_class=HTMLResponse)
 async def root():
     return landing_html
+
 
 # Customer Churn Endpoints
 @app.get("/churn", response_class=HTMLResponse)
@@ -103,6 +106,7 @@ async def churn_page():
     if churn_ui_path.exists():
         return churn_ui_path.read_text()
     return "<h1>Customer Churn Prediction</h1><p>UI file not found</p>"
+
 
 @app.post("/churn/predict")
 async def predict_churn(customer: CustomerData):
@@ -114,29 +118,31 @@ async def predict_churn(customer: CustomerData):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.post("/churn/train")
 async def train_churn_model(algorithm: str = "random_forest"):
     """Train churn prediction model"""
     try:
         # Ingest data
         df = churn_pipeline.ingest_data()
-        
+
         # Feature engineering
         df = churn_pipeline.feature_engineering(df)
-        
+
         # Prepare features
         X, y, feature_cols = churn_pipeline.prepare_features(df)
-        
+
         # Train
         result = churn_pipeline.train_model(X, y, algorithm)
-        
+
         return {
             "status": "success",
-            "metrics": result['metrics'],
-            "algorithm": algorithm
+            "metrics": result["metrics"],
+            "algorithm": algorithm,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # Fraud Detection Endpoints
 @app.get("/fraud", response_class=HTMLResponse)
@@ -146,26 +152,29 @@ async def fraud_page():
         return fraud_ui_path.read_text()
     return "<h1>Real-time Fraud Detection</h1><p>UI file not found</p>"
 
+
 @app.post("/fraud/analyze")
 async def analyze_fraud(transaction: TransactionData):
     """Analyze transaction for fraud"""
     try:
         transaction_dict = transaction.dict()
-        
+
         # Ingest
         fraud_pipeline.ingest_streaming_data(transaction_dict)
-        
+
         # Infer
         result = await fraud_pipeline.model_inference(transaction_dict)
-        
+
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/fraud/metrics")
 async def fraud_metrics():
     """Get fraud detection performance metrics"""
     return fraud_pipeline.get_performance_metrics()
+
 
 # Medical Image Endpoints
 @app.get("/medical", response_class=HTMLResponse)
@@ -175,6 +184,7 @@ async def medical_page():
         return medical_ui_path.read_text()
     return "<h1>Medical Image Analysis</h1><p>UI file not found</p>"
 
+
 @app.post("/medical/predict")
 async def predict_medical_image(file: UploadFile = File(None)):
     """Predict medical image"""
@@ -183,24 +193,25 @@ async def predict_medical_image(file: UploadFile = File(None)):
             return {
                 "prediction": "No image provided",
                 "confidence": 0.0,
-                "error": "Please upload an image file"
+                "error": "Please upload an image file",
             }
-        
+
         # Save uploaded file temporarily
         contents = await file.read()
         temp_path = Path(f"workspace/temp_{file.filename}")
         temp_path.parent.mkdir(parents=True, exist_ok=True)
         temp_path.write_bytes(contents)
-        
+
         # Predict
         result = medical_pipeline.predict(str(temp_path))
-        
+
         # Cleanup
         temp_path.unlink()
-        
+
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # Recommendation Endpoints
 @app.get("/recommendation", response_class=HTMLResponse)
@@ -210,45 +221,49 @@ async def recommendation_page():
         return rec_ui_path.read_text()
     return "<h1>E-commerce Recommendation</h1><p>UI file not found</p>"
 
+
 @app.post("/recommendation/recommend")
 async def get_recommendations(request: RecommendationRequest):
     """Get recommendations for user"""
     try:
         # Initialize with sample behaviors if empty
-        if len(recommendation_pipeline.feature_store['user_behaviors']) == 0:
+        if len(recommendation_pipeline.feature_store["user_behaviors"]) == 0:
             # Add sample behaviors for demo
             sample_users = [f"user_{i}" for i in range(1, 6)]
             sample_items = [f"item_{i}" for i in range(1, 21)]
-            behaviors = ['view', 'click', 'purchase', 'rating']
-            
+            behaviors = ["view", "click", "purchase", "rating"]
+
             for user in sample_users:
                 for _ in range(10):
                     item = np.random.choice(sample_items)
                     behavior = np.random.choice(behaviors)
-                    metadata = {'rating': np.random.randint(1, 6)} if behavior == 'rating' else {}
-                    recommendation_pipeline.track_user_behavior(user, item, behavior, metadata)
-            
+                    metadata = (
+                        {"rating": np.random.randint(1, 6)}
+                        if behavior == "rating"
+                        else {}
+                    )
+                    recommendation_pipeline.track_user_behavior(
+                        user, item, behavior, metadata
+                    )
+
             logger.info("✅ Initialized with sample user behaviors")
-        
+
         # Update feature store
         recommendation_pipeline.update_feature_store()
-        
+
         # Train model if not trained
         if recommendation_pipeline.model is None:
             recommendation_pipeline.train_model()
-        
+
         # Get recommendations
         recommendations = recommendation_pipeline.recommend(
-            request.user_id, 
-            request.top_k
+            request.user_id, request.top_k
         )
-        
-        return {
-            "user_id": request.user_id,
-            "recommendations": recommendations
-        }
+
+        return {"user_id": request.user_id, "recommendations": recommendations}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/recommendation/track")
 async def track_behavior(user_id: str, item_id: str, behavior_type: str):
@@ -256,10 +271,12 @@ async def track_behavior(user_id: str, item_id: str, behavior_type: str):
     recommendation_pipeline.track_user_behavior(user_id, item_id, behavior_type)
     return {"status": "tracked"}
 
+
 @app.get("/recommendation/analytics")
 async def recommendation_analytics():
     """Get recommendation analytics"""
     return recommendation_pipeline.get_performance_analytics()
+
 
 # Autonomous Vehicle Endpoints
 @app.get("/vehicle", response_class=HTMLResponse)
@@ -268,6 +285,7 @@ async def vehicle_page():
     if vehicle_ui_path.exists():
         return vehicle_ui_path.read_text()
     return "<h1>Autonomous Vehicle Perception</h1><p>UI file not found</p>"
+
 
 @app.post("/vehicle/inference")
 async def vehicle_inference(sensor_data: VehicleSensorData):
@@ -279,10 +297,12 @@ async def vehicle_inference(sensor_data: VehicleSensorData):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.get("/vehicle/monitor")
 async def vehicle_monitor():
     """Get vehicle performance metrics"""
     return vehicle_pipeline.monitor_performance()
+
 
 # Health Check
 @app.get("/health")
@@ -294,15 +314,16 @@ async def health():
             "fraud_detection": True,
             "medical_image": True,
             "recommendation": True,
-            "autonomous_vehicle": True
-        }
+            "autonomous_vehicle": True,
+        },
     }
+
 
 if __name__ == "__main__":
     print("=" * 70)
     print("🚀 Enterprise ML Pipeline Server")
     print("=" * 70)
-    print("🌐 Landing Page: http://127.0.0.1:8000")
+    print("🌐 Landing Page: http://122.0.0.1:8000")
     print("📊 Customer Churn: http://127.0.0.1:8000/churn")
     print("🚨 Fraud Detection: http://127.0.0.1:8000/fraud")
     print("🏥 Medical Image: http://127.0.0.1:8000/medical")
